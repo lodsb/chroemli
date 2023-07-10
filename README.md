@@ -8,7 +8,7 @@ Input notes are requantized as soon as the chord notes change, this means that h
 
 **chroemli** has two additional modes which are selectable via two switches:
   * scale velocity of notes that are to be quantized via chord input 
-  * requantize immediately all playing notes either when the chord changes or when the next note on/off that is to be quantized arrives (reduces spurious notes that happen due to the serial nature of MIDI)
+  * requantize all playing notes either immediately when the chord changes or when the next note on/off that is to be quantized arrives (reduces spurious notes that happen due to the serial nature of MIDI)
 
 ## Hardware
 
