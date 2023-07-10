@@ -20,5 +20,5 @@ You can see/change the pin-assignment in [src/common.h](https://github.com/lodsb
 ![Alt text](doc/breadboard.jpg?raw=true "Breadboard")
 
 ## Notes:
-The requantization is done by creating a diff between the currently quantized notes and the new quantization result, which then uses this to
+The requantization is done by first creating a diff between the currently quantized notes and the new quantization result, which is then used to
 restart or continue currently playing notes. I did not optimize that part much since the RP2040 is quick enough to handle this exhaustive search in realtime.
