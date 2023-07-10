@@ -12,7 +12,7 @@ Input notes are requantized as soon as the choord notes change, this means that 
 
 ## Hardware
 
-I used a vanilla Raspberry Pi Pico board plus the Adafruit MIDI Featherwing, plus two switches and pull-down resistors (10k Ohm). You can also use the Adafruit RP2040 Board and get some colorful feedback when midi messages are sent via the inbuilt NeoPixel.
+I used a vanilla Raspberry Pi Pico board and the Adafruit MIDI Featherwing, plus two switches and pull-down resistors (10k Ohm). You can also use the Adafruit RP2040 Board and get some colorful feedback when midi messages are sent via the inbuilt NeoPixel.
 You can see/change the pin-assignment in [src/common.h](https://github.com/lodsb/chroemli/blob/master/src/common.h). The MIDI shield is connected to Serial1 and the switches to GPIO 7 & 8.
 
 Dirty Prototype:
