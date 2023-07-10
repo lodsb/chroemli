@@ -1,0 +1,28 @@
+#pragma once
+
+#include <cstdint>
+
+#include <SerialUART.h>
+
+////////////////////////////////////////////////////////////////////////////////
+
+#define NEO_PIXEL_PIN 16
+#define SWITCH_ONE_PIN 7
+#define SWITCH_TWO_PIN 8
+#define MIDI_IO_UART Serial1
+
+////////////////////////////////////////////////////////////////////////////////
+
+static uint8_t constexpr NNOTES = 128;
+static uint8_t constexpr NCHANS = 16;
+static uint8_t constexpr NQUANTIZER_NOTES = 12;
+
+////////////////////////////////////////////////////////////////////////////////
+
+using NoteOffCallback = void (*)(uint8_t n, uint8_t c);
+using NoteOnCallback  = void (*)(uint8_t n, uint8_t v, uint8_t c);
+
+////////////////////////////////////////////////////////////////////////////////
+
+#include <Adafruit_NeoPixel.h>
+#include <MIDI.h>
