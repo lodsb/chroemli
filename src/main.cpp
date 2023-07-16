@@ -70,12 +70,12 @@ MIDI_CREATE_INSTANCE(HardwareSerial, MIDI_IO_UART,  MIDI);
 
 void send_note_on(uint8_t note, uint8_t velocity, uint8_t channel)
 {
-   MIDI.sendNoteOn(note, velocity, channel+1);
+   MIDI.sendNoteOn(note, velocity, channel);
 }
 
 void send_note_off(uint8_t note, uint8_t channel)
 {
-   MIDI.sendNoteOff(note, 0, channel+1);
+   MIDI.sendNoteOff(note, 0, channel);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
