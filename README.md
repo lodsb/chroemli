@@ -1,9 +1,10 @@
 # chroemli
-Realtime MIDI note quantization (hardware)
+Realtime MIDI note quantization/transposition (hardware)
 
-Simple tool to quantize incoming midi notes from channels 1-15 to midi notes that are played on channel 16. Similar to a chord track in your DAW or a scale quantizer, except that you can change the scales/chords on the fly via a master keyboard or sequencer etc.
+Simple tool to quantize/transpose incoming midi notes from channels 1-15 to midi notes that are played on channel 16. 
+Similar to a chord track in your DAW or a scale quantizer, except that you can change the scales/chords on the fly via a master keyboard or sequencer etc.
 
-Let's call the notes on channels 1-15 *input-notes* and the ones arriving in channel 16 *chord-notes* for the raminder of the description.
+Let's call the notes on channels 1-15 *input-notes* and the ones arriving in channel 16 *chord-notes* for the remainder of the description.
 Input notes are requantized as soon as the chord notes change, this means that held input notes will either continue if the chord includes the note or will be stopped and restarted with the new quantized pitch.
 
 **chroemli** has two additional modes which are selectable via two switches:
