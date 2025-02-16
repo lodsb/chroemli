@@ -5,45 +5,77 @@
 class NoteQuantizer
 {
 private:
-   ActiveNotesBuffer m_buffer1;
-   ActiveNotesBuffer m_buffer2;
+   ActiveNotesBuffer  _buffer1;
+   ActiveNotesBuffer  _buffer2;
+   ActiveNotesBuffer* _current_buffer;
 
-   ActiveNotesBuffer* m_current_buffer;
+   NoteOnCallback  _note_on_callback;
+   NoteOffCallback _note_off_callback;
 
-   NoteOnCallback  m_note_on_callback;
-   NoteOffCallback m_note_off_callback;
-
-   bool    m_quantiziation_changed;
-   bool    m_active_quantizer_notes[NQUANTIZER_NOTES];
-   uint8_t m_active_quantizer_velocities[NQUANTIZER_NOTES];
+   bool    _quantiziation_changed;
+   bool    _active_quantizer_notes[NQUANTIZER_NOTES];
+   uint8_t _active_quantizer_velocities[NQUANTIZER_NOTES];
 
 
 public:
    NoteQuantizer(NoteOnCallback note_on_cb, NoteOffCallback note_off_cb)
-           : m_note_on_callback{note_on_cb}
-             , m_note_off_callback{note_off_cb}
-             , m_quantiziation_changed{false}
+            : _note_on_callback{note_on_cb}
+            , _note_off_callback{note_off_cb}
+            , _quantiziation_changed{false}
    {
       clear();
-      m_current_buffer = &m_buffer1;
+      _current_buffer = &_buffer1;
    }
 
 
-   void activate_quantizer_note(uint8_t note, uint8_t velo)
+   void activate_quantizer_note(const ActiveNotesBuffer& unquantized, bool apply_velocity_scaling, uint8_t note, uint8_t velo)
    {
+      
       uint8_t note_in_octave = note % 12;
-      m_active_quantizer_notes[note_in_octave] = true;
-      m_active_quantizer_velocities[note_in_octave] = velo;
+      _active_quantizer_notes[note_in_octave] = true;
+      _active_quantizer_velocities[note_in_octave] = velo;
 
-      m_quantiziation_changed = true;
+      _quantiziation_changed = true;
+
+      ActiveNotesBuffer* work = get_work_buffer();
+      work->clear();   
+
+      if(apply_velocity_scaling)
+      {
+         requantize_buffer<true>(unquantized, *work);
+      }
+      else
+      {
+         requantize_buffer<false>(unquantized, *work);
+      }
+
+      _current_buffer->diff(*work, _note_on_callback, _note_off_callback);
+
+      swap_buffers();      
    }
 
-   void deactivate_quantizer_note( uint8_t note)
+   void deactivate_quantizer_note(const ActiveNotesBuffer& unquantized, bool apply_velocity_scaling, uint8_t note)
    {
       uint8_t note_in_octave = note % 12;
-      m_active_quantizer_notes[note_in_octave] = false;
+      _active_quantizer_notes[note_in_octave] = false;
 
-      m_quantiziation_changed = true;
+      _quantiziation_changed = true;
+
+      ActiveNotesBuffer* work = get_work_buffer();
+      work->clear();
+      
+      if(apply_velocity_scaling)
+      {
+         requantize_buffer<true>(unquantized, *work);
+      }
+      else
+      {
+         requantize_buffer<false>(unquantized, *work);
+      }
+
+      _current_buffer->diff(*work, _note_on_callback, _note_off_callback);
+
+      swap_buffers();
    }
 
    void quantize_note( uint8_t note, uint8_t velocity, uint8_t& quantized_note, uint8_t& quantized_velocity)
@@ -58,7 +90,7 @@ public:
 
       for(uint8_t i = 0; i < NQUANTIZER_NOTES; i++)
       {
-         if(m_active_quantizer_notes[i])
+         if(_active_quantizer_notes[i])
          {
             uint8_t abs_dist = std::abs(note_in_octave - i);
             if(abs_dist <= min_dist)
@@ -73,11 +105,11 @@ public:
       if(is_quantized) // we found a note to quantize to
       {
          quantized_note     = octave_offset + min_dist_note_index;
-         quantized_velocity = m_active_quantizer_velocities[min_dist_note_index];
+         quantized_velocity = _active_quantizer_velocities[min_dist_note_index];
       }
       else
       {
-         quantized_note = note;
+         quantized_note     = note;
          quantized_velocity = velocity;
       }
 
@@ -85,7 +117,7 @@ public:
 
    void clear()
    {
-      for(bool & active_quantizer_note : m_active_quantizer_notes)
+      for(bool& active_quantizer_note : _active_quantizer_notes)
       {
          active_quantizer_note = false;
       }
@@ -95,7 +127,7 @@ public:
    {
       uint8_t count = 0;
 
-      for(bool active_quantizer_note : m_active_quantizer_notes)
+      for(bool& active_quantizer_note : _active_quantizer_notes)
       {
          if(active_quantizer_note)
          {
@@ -121,16 +153,16 @@ public:
       uint8_t qn, qv;
       quantize_note(note, velo, qn, qv);
 
-      m_current_buffer->activate_note(qn, velo, channel);
+      _current_buffer->activate_note(qn, velo, channel);
 
       if(apply_velocity_scaling)
       {
 
-         m_note_on_callback(qn, scale_velocity(velo, qv), channel);
+         _note_on_callback(qn, scale_velocity(velo, qv), channel);
       }
       else
       {
-         m_note_on_callback(qn, velo, channel);
+         _note_on_callback(qn, velo, channel);
       }
    }
 
@@ -139,41 +171,48 @@ public:
       uint8_t qn, qv;
       quantize_note(note, 0, qn, qv);
 
-      m_current_buffer->deactivate_note(qn, channel);
-      m_note_off_callback(qn, channel);
+      if(_current_buffer->is_note_active(qn, channel))
+      {
+         _current_buffer->deactivate_note(qn, channel);
+         _note_off_callback(qn, channel);
+      }
+      else // probably missed quantizing that note
+      {
+         _note_off_callback(note, channel);
+      }
    }
 
    ActiveNotesBuffer* get_work_buffer()
    {
-      if( m_current_buffer == &m_buffer1)
+      if( _current_buffer == &_buffer1)
       {
-         return &m_buffer2;
+         return &_buffer2;
       }
       else
       {
-         return &m_buffer1;
+         return &_buffer1;
       }
    }
 
    void swap_buffers()
    {
-      if( m_current_buffer == &m_buffer1)
+      if( _current_buffer == &_buffer1)
       {
-         m_current_buffer = &m_buffer2;
+         _current_buffer = &_buffer2;
       }
       else
       {
-         m_current_buffer = &m_buffer1;
+         _current_buffer = &_buffer1;
       }
    }
 
    void requantize_if_necessary(const ActiveNotesBuffer& unquantized, bool apply_velocity_scaling)
    {
-      if(m_quantiziation_changed)
+      if(_quantiziation_changed)
       {
          requantize(unquantized, apply_velocity_scaling);
 
-         m_quantiziation_changed = false;
+         _quantiziation_changed = false;
       }
    }
 
@@ -191,7 +230,7 @@ public:
          requantize_buffer<false>(unquantized, *work);
       }
 
-      m_current_buffer->diff(*work, m_note_on_callback, m_note_off_callback);
+      _current_buffer->diff(*work, _note_on_callback, _note_off_callback);
 
       swap_buffers();
    }
@@ -205,14 +244,14 @@ public:
       for(uint8_t i = 0; i < NNOTES; i++)
       {
          // optimization if any note is set in a channel
-         if( unquantized.m_is_active_sum[i] != 0)
+         if(unquantized.is_note_set_in_any_channel(i))
          {
             for(uint8_t c = 0; c < NCHANS; c++)
             {
-               if(unquantized.m_is_active[i][c])
+               if(unquantized.is_note_active(i, c))
                {
                   uint8_t qn, qv;
-                  uint8_t velo = unquantized.m_velocity[i][c];
+                  uint8_t velo = unquantized.get_velocity(i, c);
 
                   quantize_note(i, velo, qn, qv);
 

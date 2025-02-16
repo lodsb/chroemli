@@ -102,7 +102,7 @@ void handle_note_on(byte channel, byte note, byte velocity)
    }
    else
    {
-      note_quantizer.activate_quantizer_note(note, velocity);
+      note_quantizer.activate_quantizer_note(active_input_notes_unquantized, apply_velocity_scaling, note, velocity);
 
       if(!requantize_on_note_on)
       {
@@ -130,7 +130,7 @@ void handle_note_off(byte channel, byte note, byte velocity)
    }
    else
    {
-      note_quantizer.deactivate_quantizer_note(note);
+      note_quantizer.deactivate_quantizer_note(active_input_notes_unquantized, apply_velocity_scaling, note);
 
       if(!requantize_on_note_off)
       {
